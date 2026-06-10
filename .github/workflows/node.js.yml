@@ -1,0 +1,54 @@
+name: Test cmd-shim with node.js file
+on:   # yamllint disable-line rule:truthy
+  push: {}
+  workflow_dispatch: {}
+jobs:
+  test-main:
+    name: Test cmd-shim@main
+    runs-on: windows-latest
+    timeout-minutes: 1
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        persist-credentials: false
+        repository: npm/cmd-shim
+    - name: Create mycommand.js and wrapper
+      shell: cmd
+      run: |
+        echo #!/usr/bin/env node >mycommand.js
+        echo console.log('Success!') >>mycommand.js
+        md bin
+        node -e "require('.')('mycommand.js', 'bin/mycommand')"
+        type nul >bin/node.js
+    - run: mycommand
+      shell: cmd
+      working-directory: ./bin
+
+  test-pr-64:
+    name: Test cmd-shim@#64
+    runs-on: windows-latest
+    timeout-minutes: 1
+    steps:
+    - uses: actions/checkout@v5
+      with:
+        persist-credentials: false
+        repository: npm/cmd-shim
+    - run: git fetch origin pull/64/head:pull64
+    - run: git cherry-pick pull64
+      env:
+        # Preserve original commit information
+        # and avoid error due to missing git identity config on runner
+        GIT_COMMITTER_DATE: Mon Apr 18 02:31:52 2022 +0100
+        GIT_COMMITTER_NAME: Giovanni Calò
+        GIT_COMMITTER_EMAIL: giovanni.calo@live.it
+    - name: Create mycommand.js and wrapper
+      shell: cmd
+      run: |
+        echo #!/usr/bin/env node >mycommand.js
+        echo console.log('Success!') >>mycommand.js
+        md bin
+        node -e "require('.')('mycommand.js', 'bin/mycommand')"
+        type nul >bin/node.js
+    - run: mycommand
+      shell: cmd
+      working-directory: ./bin
